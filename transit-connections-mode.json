@@ -1,0 +1,19 @@
+ [
+  {"attributes": {
+  	"mode": "GoTriangle",
+  	"connections": 11,
+    "year2015": 11,
+    "year2016": 14
+  }},
+  {"attributes": {
+    "mode": "Greyhound",
+    "connections": 27,
+    "year2015": 27,
+    "year2016": 27
+  }},
+  {"attributes": {
+    "mode": "Amtrak",
+    "connections": 11,
+    "year2015": 6,
+    "year2016": 6
+  }}]
