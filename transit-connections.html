@@ -1,191 +1,104 @@
 <!DOCTYPE html>
 <style>
 
-.axis .domain {
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.x.axis path {
   display: none;
+}
+
+.line {
+  fill: none;
+  stroke: #444;
+  stroke-width: 1.5px;
+}
+
+.grid line {
+  stroke: #ddd;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+}
+
+.grid path {
+  stroke-width: 0;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+.toolTip {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    position: absolute;
+    display: none;
+    width: auto;
+    height: auto;
+    background: none repeat scroll 0 0 white;
+    border: 0 none;
+    border-radius: 8px 8px 8px 8px;
+    box-shadow: -3px 3px 15px #888888;
+    color: black;
+    font: 12px sans-serif;
+    padding: 5px;
+    text-align: center;
 }
 
 </style>
 <svg width="960" height="500"></svg>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 
 <script>
 
-// d3.request('./transit-connections-mode.json')
-//     .mimeType("application/json")
-//     .response(function(xhr) { return JSON.parse(xhr.responseText); })
-//     .get(function(error, data) {
-//       if (error) throw error;
 
-$.ajax({
-  url: "file://Users/elbaump/Desktop/code/transit-connections/transit-connections-mode.json",
-  crossDomain: true
-}).done(function(error, data) {
-
-
-
-// Make a JSON object out of the data.d string receieved.
-json_data = jQuery.parseJSON(data.d)
-
-// width = 960 - 40 - 20 = 900
-// height = 500 - 20 - 30 = 450
-var margin = { top: 20, right: 20, bottom: 30, left: 40 },
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
-//  Information on ordinal scales can be found at: https://github.com/mbostock/d3/wiki/Ordinal-Scales
-//  An ordinal scale that sets the output range from the specified continuous interval (that is, [0, width]).
-//  The array interval contains two elements representing the min and max numeric values.
-//  This interval is subdivided into n evenly-spaced bands, where n is the number of (unique) values in the domain.
-//  The bands may be offset from the edge of the interval and other bands according to the specifided padding,
-//      which defaults to zero.
-//  The padding is typically in the range [0,1] (0.1 in this example) and corrseponds to the amount of space
-//      in the range interval to allocate to padding.
-//  A value of 0.5 means that the band width will be equal to the padding width.
-var x0 = d3.scale.ordinal()
-    .rangeRoundBands([0, width], .1);
-
-//  Constructs a new ordinal scale with an empty domain and an empty range.
-//  The ordinal scale is invalid (always returning undefined) until an output range is specified).
-var x1 = d3.scale.ordinal();
-
-//  Information on linear scales can be found at: https://github.com/mbostock/d3/wiki/Quantitative-Scales
-//  Quantitative scales have a continuous domain, such as the set of real numbers, or dates.
-//  Linear scales are a type of quantitative scale.
-//  Linear scales are the most common scale, and a good default choice to map a continuous input domain to a
-//      continous output range.
-//  The mapping is linear in that the output range value y can be expressed as a linear function of the
-//      input domain value x: y = mx + b.
-//  The input domain is typically a dimension of the data that you want to visualize, such as the height of
-//      students (measured in meters) in a sample population.
-//  The output range is typically a dimension of the desired output visualization, such as the height of bars
-//      (measured in pixels) in a histogram.
-
-//  This will set up our y height scale.
-var y = d3.scale.linear()
-    .range([height, 0]);
-
-// Colors of the graph.
+// $.ajax({
+//   url: "http://peterelbaum.com/transit-connections//transit-connections-mode.json",
+//   crossDomain: true,
+//   dataType: "json"
+// }).done(function(resp) {
 //
-// First    : Total flights #097054 (green)
-// Second   : Completed flights #6599FF (blue)
-// Third    : Cancelled flights #FFDE00 (yellow)
-// Fourth   : Aborted flights #FF9900 (orange)
-var color = d3.scale.ordinal()
-    .range(["#097054", "#6599FF", "#FFDE00", "#FF9900"]);
+// console.log(resp);
+//
+// // Make a JSON object out of the data.d string receieved.
+//
+// var data = resp;
 
-//  Set up the xAxis to use our x0 scale and be oriented on the bottom.
-var xAxis = d3.svg.axis()
-    .scale(x0)
-    .orient("bottom");
-    // We don't worry about tickFormat here, as the ticks will be determined by the data.
-
-//  Set up the yAxis to use our y scale and be oriented on the left.
-//      Additionally, set the tick format to display appropriate labels on the axis (taking out for now).
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left");
-//    .tickFormat(d3.format(".2s"));
-
-// Set up the svg canvas with the width and height we calculated earlier.
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-// Move it to the right margin.left pixels, and move it down margin.top pixels
-data = json_data
-
-
-// seriesNames = "Total", "Completed", "Canceled" and "Aborted"               See, we're filtering out "YEAR", "MONTH" and "MMM"
-var seriesNames = d3.keys(data[0]).filter(function (key) { return (key !== "YEAR") && (key !== "MONTH") && (key !== "MMM"); });
-//                alert(JSON.stringify(seriesNames));
-//                alert(seriesNames);
-
-data.forEach(function (d) {
-    d.Flights = seriesNames.map(function (name) { return { name: name, value: +d[name] }; });
-    //alert("hi --- " + JSON.stringify(d.Flights));
-});
-
-//alert(JSON.stringify(data));
-
-//x0.domain(data.map(function (d) { return d.State; }));
-// Change State to be MMM, YEAR (for example: "Jan 2012") Could change this to Jan '12
-x0.domain(data.map(function (d) { return d.MMM + " " + d.YEAR; }));
-//alert(JSON.stringify(data.map(function (d) { return d.MMM + " " + d.YEAR; })));
-
-//                //x1.domain(seriesNames).rangeRoundBands([0, x0.rangeBand()]);
-x1.domain(seriesNames).rangeRoundBands([0, x0.rangeBand()]);
-
-//                //y.domain([0, d3.max(data, function (d) { return d3.max(d.ages, function (d) { return d.value; }); })]);
-//                // Make the y domain go from 0 up to the max of d.Total (Total flights)
-//                y.domain([0, d3.max(data, function (d) { return d3.max(d.Total); })]);
-y.domain([0, (10 + d3.max(data, function (d) { return d3.max(d.Flights, function (d) { return d.value; }); }))]);
-
-
-// The axis business
-svg.append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0," + height + ")")
-    .call(xAxis);
-
-svg.append("g")
-    .attr("class", "y axis")
-    .call(yAxis)
-.append("text")
-    .attr("transform", "rotate(-90)")
-    .attr("y", 6)
-    .attr("dy", ".71em")
-    .style("text-anchor", "end")
-    .text("# of Flights");
-
-var state = svg.selectAll(".state")
-    .data(data)
-.enter().append("g")
-    .attr("class", "g")
-    .attr("transform", function (d) { return "translate(" + x0(d.MMM + " " + d.YEAR) + ",0)"; });
-
-//alert(JSON.stringify(d.Flights[0]));
-state.selectAll("rect")
-    .data(function (d) { return d.Flights; })
-.enter().append("rect")
-    .attr("width", x1.rangeBand())
-    .attr("x", function (d) { return x1(d.name); })
-    .attr("y", function (d) { return y(d.value); })
-    .attr("height", function (d) { return height - y(d.value); })
-    .style("fill", function (d) { return color(d.name); });
-
-
-var legend = svg.selectAll(".legend")
-    .data(seriesNames.slice().reverse())
-.enter().append("g")
-    .attr("class", "legend")
-    .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
-
-legend.append("rect")
-    .attr("x", width - 18)
-    .attr("width", 18)
-    .attr("height", 18)
-    .style("fill", color);
-
-legend.append("text")
-    .attr("x", width - 24)
-    .attr("y", 9)
-    .attr("dy", ".35em")
-    .style("text-anchor", "end")
-    .text(function (d) { return d; })
-    .on("click", function (d) {
-        alert(d);
-});
-
-});
-
-</script>
-
-
-<!--
-<script>
 
 var svg = d3.select("svg"),
     margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -204,21 +117,35 @@ var y = d3.scaleLinear()
     .rangeRound([height, 0]);
 
 var z = d3.scaleOrdinal()
-    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+    .range(["#17581D", "#718A73"]);
 
-// d3.json("./transit-connections-mode.json", function(d, i, columns) {
-//   for (var i = 1, n = columns.length; i < n; ++i) d[columns[i]] = +d[columns[i]];
+var divTooltip = d3.select("body").append("div").attr("class", "toolTip");
+
+// var tip = d3.tip()
+//   .attr('class', 'd3-tip')
+//   .offset([-10, 0])
+//   .html(function(d) {
+//     return "<strong>Mode:</strong> <span style='color:black'>" + d.mode + "</span>";
+//   });
+
+// svg.call(tip);
+
+// function type(d) {
+//   d.frequency = +"d.2015" | +"d.2016";
 //   return d;
-// }, function(error, data) {
-//   if (error) throw error;
+// }
 
-d3.request('transit-connections-mode.json')
-    .mimeType("application/json")
-    .response(function(xhr) { return JSON.parse(xhr.responseText); });
+d3.csv("http://peterelbaum.com/transit-connections/transit-connections-mode.csv", function(d, i, columns) {
+  for (var i = 1, n = columns.length; i < n; ++i) d[columns[i]] = +d[columns[i]];
+  return d;
+}, function(error, data) {
+  if (error) throw error;
 
   var keys = data.columns.slice(1);
+  var color = d3.scaleOrdinal(d3.category20c);
 
-  x0.domain(data.map(function(d) { return d.State; }));
+
+  x0.domain(data.map(function(d) { return d.mode; }));
   x1.domain(keys).rangeRound([0, x0.bandwidth()]);
   y.domain([0, d3.max(data, function(d) { return d3.max(keys, function(key) { return d[key]; }); })]).nice();
 
@@ -226,7 +153,7 @@ d3.request('transit-connections-mode.json')
     .selectAll("g")
     .data(data)
     .enter().append("g")
-      .attr("transform", function(d) { return "translate(" + x0(d.State) + ",0)"; })
+      .attr("transform", function(d) { return "translate(" + x0(d.mode) + ",0)"; })
     .selectAll("rect")
     .data(function(d) { return keys.map(function(key) { return {key: key, value: d[key]}; }); })
     .enter().append("rect")
@@ -234,7 +161,28 @@ d3.request('transit-connections-mode.json')
       .attr("y", function(d) { return y(d.value); })
       .attr("width", x1.bandwidth())
       .attr("height", function(d) { return height - y(d.value); })
-      .attr("fill", function(d) { return z(d.key); });
+      .attr("fill", function(d) { return z(d.key); })
+      .on("mousemove", function(d){
+        divTooltip.style("left", d3.event.pageX+10+"px");
+        divTooltip.style("top", d3.event.pageY-25+"px");
+        divTooltip.style("display", "inline-block");
+        var x = d3.event.pageX, y = d3.event.pageY
+        var elements = document.querySelectorAll(':hover');
+        l = elements.length
+        l = l-1
+        elementData = elements[l].__data__
+        divTooltip.html(d.key+ "<strong> | </strong>" +d.value + " connections");
+    })
+    .on("mouseout", function(d){
+      divTooltip.style("display", "none");
+  })
+      .on("mouseover", function(d) {
+        d3.select(this).attr("fill", "#1D3D00");
+      })
+      .on("mouseout", function(d, i) {
+        d3.select(this).attr("fill",
+          function(d) { return z(d.key); })
+        });
 
   g.append("g")
       .attr("class", "axis")
@@ -251,7 +199,16 @@ d3.request('transit-connections-mode.json')
       .attr("fill", "#000")
       .attr("font-weight", "bold")
       .attr("text-anchor", "start")
-      .text("Population");
+      .attr("font-family", "Palatino")
+      .attr("font-size", "20px")
+      .attr("margin-top", "20px")
+      .attr("padding-bottom", "20px")
+      .text("GoRaleigh Regional Connections by Mode");
+
+
+// });
+
+
 
   var legend = g.append("g")
       .attr("font-family", "sans-serif")
@@ -273,6 +230,6 @@ d3.request('transit-connections-mode.json')
       .attr("y", 9.5)
       .attr("dy", "0.32em")
       .text(function(d) { return d; });
+});
 
-
-</script> -->
+</script>
